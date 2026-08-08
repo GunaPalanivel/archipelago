@@ -77,6 +77,15 @@ FILE_TYPE_CATEGORY_TO_EXTENSIONS: dict[FileTypeCategory, list[str] | None] = {
 # @apg_file_type_extensions:end
 
 
+# Studio verifier rows historically shipped OpenDocument-less labels. Accept them
+# so expected_file_type is not silently reset to "All output (no filtering)".
+LEGACY_FILE_TYPE_EXTENSIONS: dict[str, list[str]] = {
+    "Word Documents (.docx, .doc)": [".docx", ".doc"],
+    "Spreadsheets (.xlsx, .xls, .xlsm)": [".xlsx", ".xls", ".xlsm"],
+    "Presentations (.pptx, .ppt)": [".pptx", ".ppt"],
+}
+
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -116,13 +125,13 @@ def is_valid_file_type(filter_value: str | None) -> bool:
     """
     Check if filter_value is a valid, recognized file type category.
 
-    Strict equality against FileTypeCategory values. The Grading Target dropdown
-    options (registry.py) are kept exactly in sync with this enum, so every
-    user-selectable value matches here; a guard test enforces that sync. Returns
-    False for None, empty, or unrecognized values.
+    Accepts current FileTypeCategory values and legacy Studio labels that omit
+    OpenDocument extensions. Returns False for None, empty, or unrecognized values.
     """
     if not filter_value:
         return False
+    if filter_value in LEGACY_FILE_TYPE_EXTENSIONS:
+        return True
     return filter_value in {category.value for category in FileTypeCategory}
 
 
@@ -176,6 +185,10 @@ def convert_file_types_to_extensions(file_type: str | None) -> list[str] | None:
     # Backwards compatibility: handle old "Any File Type" value
     if file_type == "Any File Type":
         return []
+
+    # Legacy Studio labels (pre-OpenDocument enum strings)
+    if file_type in LEGACY_FILE_TYPE_EXTENSIONS:
+        return list(LEGACY_FILE_TYPE_EXTENSIONS[file_type])
 
     # Strict lookup by exact category value
     try:
