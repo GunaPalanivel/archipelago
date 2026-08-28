@@ -102,6 +102,7 @@ from .taxjar import (
 )
 from .template import template_eval_run
 from .tool_call_check import tool_call_check_eval
+from .tool_call_precedence import tool_call_precedence_eval
 from .tool_call_llm_check import tool_call_llm_check_eval
 from .trace_verifier import trace_verifier_eval
 from .user_sim_judge import llm_judge_user_sim_eval
@@ -3508,6 +3509,115 @@ Example: Check that notes count equals 3, or that differential exists for encoun
                 field_type=TaskFieldType.TEXTAREA,
                 label="Check Results",
                 description="Detailed results for each matching call",
+            ),
+        ],
+    ),
+    # ========================================================================
+    # TOOL CALL PRECEDENCE VERIFIER (DETERMINISTIC)
+    # ========================================================================
+    # Deterministic ordering check between two tools - no LLM needed
+    # Expresses "check the state before you change it", which TOOL_CALL_CHECK
+    # cannot: it matches calls independently and never compares call_number
+    # across tools.
+    EvalIds.TOOL_CALL_PRECEDENCE: EvalDefn(
+        eval_id=EvalIds.TOOL_CALL_PRECEDENCE,
+        eval_impl=tool_call_precedence_eval,
+        helper_dependencies=[],
+        eval_types=[EvalType.PROGRAMMATIC],
+        eval_config_fields=[],
+        verifier_config_fields=[
+            TaskFieldSchema(
+                field_id="before_tool",
+                field_type=TaskFieldType.TEXT,
+                label="Before Tool",
+                description="Tool that must be called first. Accepts a single name or a list of acceptable names.",
+                required=True,
+            ),
+            TaskFieldSchema(
+                field_id="after_tool",
+                field_type=TaskFieldType.TEXT,
+                label="After Tool",
+                description="Tool whose first call must be preceded by the before tool. Accepts a single name or a list.",
+                required=True,
+            ),
+            TaskFieldSchema(
+                field_id="before_args",
+                field_type=TaskFieldType.TEXTAREA,
+                label="Before Arguments (JSON)",
+                description="Optional JSON object of argument key-value pairs; only before-tool calls matching these count",
+                required=False,
+            ),
+            TaskFieldSchema(
+                field_id="after_args",
+                field_type=TaskFieldType.TEXTAREA,
+                label="After Arguments (JSON)",
+                description="Optional JSON object of argument key-value pairs; only after-tool calls matching these count",
+                required=False,
+            ),
+            TaskFieldSchema(
+                field_id="require_after_call",
+                field_type=TaskFieldType.BOOLEAN,
+                label="Require After Call",
+                description="If true (default), FAIL when the after tool was never called. If false, PASS vacuously — the right reading for a pure 'never act without checking first' guard.",
+                default_value=True,
+                required=False,
+            ),
+            TaskFieldSchema(
+                field_id="expected_args_contains",
+                field_type=TaskFieldType.BOOLEAN,
+                label="Expected args substring match",
+                description="If true, each string in before_args/after_args must appear as a substring in the actual value. Ignored if expected_args_regex is true.",
+                default_value=False,
+                required=False,
+            ),
+            TaskFieldSchema(
+                field_id="expected_args_regex",
+                field_type=TaskFieldType.BOOLEAN,
+                label="Expected args as regex",
+                description="If true, each string in before_args/after_args is a Python regex matched with re.search(). Takes precedence over substring match.",
+                default_value=False,
+                required=False,
+            ),
+            TaskFieldSchema(
+                field_id="numerical_weight",
+                field_type=TaskFieldType.NUMBER,
+                label="Numerical Weight",
+                description="Weight for scoring (0-10)",
+                min_value=0,
+                max_value=10,
+                required=False,
+            ),
+        ],
+        verifier_output_fields=[
+            TaskFieldSchema(
+                field_id="before_tool",
+                field_type=TaskFieldType.TEXT,
+                label="Before Tool",
+                description="The tool required to come first",
+            ),
+            TaskFieldSchema(
+                field_id="after_tool",
+                field_type=TaskFieldType.TEXT,
+                label="After Tool",
+                description="The tool required to come second",
+            ),
+            TaskFieldSchema(
+                field_id="before_first_call_number",
+                field_type=TaskFieldType.NUMBER,
+                label="Before Call Number",
+                description="Step at which the before tool was first called, or null if never",
+            ),
+            TaskFieldSchema(
+                field_id="after_first_call_number",
+                field_type=TaskFieldType.NUMBER,
+                label="After Call Number",
+                description="Step at which the after tool was first called, or null if never",
+            ),
+            TaskFieldSchema(
+                field_id="total_tool_calls",
+                field_type=TaskFieldType.NUMBER,
+                label="Total Tool Calls",
+                description="Number of tool calls in the trajectory",
             ),
         ],
     ),

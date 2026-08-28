@@ -69,6 +69,8 @@ class EvalIds(StrEnum):
     TOOL_CALL_CHECK = "tool_call_check"
     # Tool Call LLM Check verifier - LLM-based evaluation of tool calls against custom criterion
     TOOL_CALL_LLM_CHECK = "tool_call_llm_check"
+    # Tool Call Precedence verifier - deterministic check that one tool precedes another
+    TOOL_CALL_PRECEDENCE = "tool_call_precedence"
     # Eightfold domain-specific verifiers
     EIGHTFOLD_FIELD_CHECK = "eightfold_field_check"
     # BambooHR domain-specific verifiers

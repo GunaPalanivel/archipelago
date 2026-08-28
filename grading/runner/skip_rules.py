@@ -92,6 +92,7 @@ _TRANSCRIPT_ONLY_EVAL_IDS: frozenset[str] = frozenset(
         "mrcr_similarity",  # FINAL_ANSWER helper (transcript-only)
         "tool_call_check",  # reads trajectory.messages tool calls; no fs
         "tool_call_llm_check",  # reads trajectory.messages tool calls; no fs
+        "tool_call_precedence",  # reads trajectory.messages tool calls; no fs
         "posttraining_tool_call_check",  # reads trajectory.messages tool calls; no fs
         "interview_fraud_decision_match",  # extracts final assistant response; no fs
         # EXCLUDED: gdpval_judge (reads golden/initial snapshot filesystem),
